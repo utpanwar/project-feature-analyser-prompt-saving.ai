@@ -5,9 +5,9 @@
   "functionalFixesLog": true,
   "autoSyncFeatures": false,
   "functionalityConfig": true,
-  "autoReadme": false,
-  "autoProjectDetails": false,
+  "autoReadme": true,
+  "autoProjectDetails": true,
   "logSkipPatterns": ["Q&A", "explanation", "what is", "how does", "why"],
-  "maxLogEntries": 500,
-  "maxFixLogEntries": 500
+  "maxLogEntries": 10000000,
+  "maxFixLogEntries": 10000000
 }
