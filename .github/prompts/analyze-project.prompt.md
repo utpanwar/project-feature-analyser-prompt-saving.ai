@@ -1,30 +1,51 @@
----
-description: "Analyze an existing project to detect implemented features, tech stack, and dependencies. Generates or updates feature-config.md with detected features marked as implemented."
+﻿---
+description: "Analyze an existing project to detect implemented features, tech stack, and dependencies. Generates or updates feature-config.md and functionality-config.md. Works with any language — JS/TS, Python, .NET, Go, Rust, Java, and more."
 agent: "agent"
 tools: [read, search, edit]
-argument-hint: "Optional: specify areas to focus on (e.g., 'focus on auth and database')"
+argument-hint: "Optional: specify areas to focus on (e.g., 'focus on auth and database') or 'functionality-only' to only generate functionality-config.md"
 ---
 
 # Analyze Existing Project
 
-You are a project analyzer. Your job is to scan an existing codebase, detect what features and tech stack are already implemented, and generate (or update) a `feature-config.md` with your findings.
+You are a project analyzer. Your job is to scan an existing codebase, detect what features and tech stack are already implemented, and generate (or update) a `feature-config.md` and optionally a `functionality-config.md` with your findings.
 
-## Step 1: Determine Mode
+## Step 1: Detect the Ecosystem
+
+Before doing anything else, determine what kind of project this is by scanning for project manifests:
+
+| Manifest File | Ecosystem |
+|---|---|
+| `package.json` | JavaScript/TypeScript (Node.js ecosystem) |
+| `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile`, `setup.cfg` | Python |
+| `*.csproj`, `*.sln`, `*.fsproj` | .NET (C#/F#) |
+| `go.mod` | Go |
+| `Cargo.toml` | Rust |
+| `pom.xml`, `build.gradle`, `build.gradle.kts` | Java/Kotlin (JVM) |
+| `Gemfile` | Ruby |
+| `composer.json` | PHP |
+| `mix.exs` | Elixir |
+| `Package.swift` | Swift |
+| `pubspec.yaml` | Dart/Flutter |
+
+If multiple manifests exist (e.g., monorepo), identify the primary language and note the polyglot nature.
+
+## Step 2: Determine Mode
 
 Check if `feature-config.md` already exists in the project root.
 
 - **Create mode** (file does NOT exist): Generate a fresh config with detected features marked `[x]`
 - **Merge mode** (file EXISTS): Preserve all existing `[x]` marks, only add newly detected ones. NEVER uncheck existing features.
 
-## Step 2: Detect Tech Stack
+## Step 3: Detect Tech Stack (Language-Agnostic)
 
-Scan these files and patterns to determine the tech stack:
+Based on the detected ecosystem, scan the appropriate files:
 
+### JavaScript/TypeScript Projects
 | What to Detect | Where to Look |
 |---|---|
-| Framework | `package.json` (next, react, vue, angular, express), config files (next.config.*, vite.config.*, angular.json) |
+| Framework | `package.json` (next, react, vue, angular, express, fastify), config files (next.config.*, vite.config.*, angular.json) |
 | Language | `tsconfig.json` existence, file extensions (.ts/.tsx vs .js/.jsx) |
-| Package Manager | `package-lock.json` (npm), `yarn.lock` (yarn), `pnpm-lock.yaml` (pnpm) |
+| Package Manager | `package-lock.json` (npm), `yarn.lock` (yarn), `pnpm-lock.yaml` (pnpm), `bun.lockb` (bun) |
 | CSS/Styling | `tailwind.config.*`, styled-components/emotion in deps, `*.module.css` files, MUI/Chakra in deps |
 | Database | `prisma/schema.prisma`, mongoose in deps, pg/mysql2 in deps, `.env` DB connection strings |
 | ORM | prisma, drizzle, typeorm, mongoose, sequelize in deps |
@@ -32,120 +53,191 @@ Scan these files and patterns to determine the tech stack:
 | State Mgmt | redux/zustand/mobx/recoil in deps, React Context usage |
 | Auth | next-auth/passport/jsonwebtoken/bcrypt in deps, auth-related folders/files |
 
-## Step 3: Detect Implemented Features
+### Python Projects
+| What to Detect | Where to Look |
+|---|---|
+| Framework | `requirements.txt` or `pyproject.toml` (django, flask, fastapi, tornado, aiohttp, starlette) |
+| Package Manager | `Pipfile` (pipenv), `pyproject.toml` with `[tool.poetry]` (poetry), `uv.lock` (uv), `requirements.txt` (pip) |
+| Type Checking | `mypy.ini`, `pyrightconfig.json`, `pyproject.toml` [tool.mypy], type stubs |
+| Linting | `ruff.toml`, `.flake8`, `pyproject.toml` [tool.ruff], `.pylintrc` |
+| Formatting | `pyproject.toml` [tool.black], [tool.isort] |
+| Database | SQLAlchemy, Django ORM, Tortoise ORM, Peewee in deps; `alembic/` folder, `migrations/` |
+| Testing | pytest in deps, `tests/` folder, `conftest.py`, `.coveragerc` |
+| Task Queue | celery, rq, dramatiq in deps; `celery.py`, `tasks.py` files |
+| Auth | django.contrib.auth, Flask-Login, FastAPI security, python-jose, PyJWT in deps |
+| API Docs | Swagger/OpenAPI config, `docs/` folder, Sphinx conf |
 
-For each feature category, search for evidence:
+### .NET Projects
+| What to Detect | Where to Look |
+|---|---|
+| Framework | `*.csproj` TargetFramework (net6.0, net7.0, net8.0), project type (web, console, library) |
+| Web Framework | ASP.NET Core, Blazor, MVC, Razor Pages, Minimal APIs — check `Program.cs`, `Startup.cs` |
+| Database | Entity Framework Core in deps, `DbContext` files, `Migrations/` folder, connection strings in `appsettings.json` |
+| Auth | Microsoft.AspNetCore.Identity, JWT Bearer config, `[Authorize]` attributes |
+| Testing | xUnit, NUnit, MSTest projects, `*.Tests.csproj` |
+| DI | Service registrations in `Program.cs`, `Startup.cs` |
+| API | Controllers, `[ApiController]`, Swagger/Swashbuckle in deps, minimal API `MapGet`/`MapPost` |
+| Logging | Serilog, NLog, Application Insights in deps |
+| CQRS | MediatR in deps, Command/Query folders |
 
-### Project Setup
-- [x] if: project has `package.json` with a framework, proper folder structure
-- [x] TypeScript if: `tsconfig.json` exists
-- [x] Linting if: `.eslintrc*` or `eslint.config.*` exists, `prettier` in deps
-- [x] Git if: `.gitignore` exists, `.husky/` folder exists
+### Go Projects
+| What to Detect | Where to Look |
+|---|---|
+| Framework | `go.mod` dependencies (gin, echo, fiber, chi), `main.go` imports |
+| Database | GORM, sqlx, database/sql usage, migration files |
+| Testing | `*_test.go` files, testify in deps |
+| API | Handler/Controller patterns, protobuf files (.proto), gRPC setup |
+| Config | Viper, envconfig imports |
+| Logging | zerolog, zap, slog imports |
 
-### Authentication & Authorization
-- Search for: `login`, `signup`, `sign-in`, `auth`, `session`, `jwt`, `passport`, `next-auth`, `bcrypt`
-- Check `pages/auth/`, `app/auth/`, `components/auth/`, `src/auth/`
-- Check deps: `next-auth`, `passport`, `jsonwebtoken`, `bcrypt`, `@auth/*`
+### For Other Languages
+Apply the same detection strategy: read the manifest, check dependencies, scan for config files, look for framework-specific patterns, and detect implemented features by evidence.
 
-### Navigation & Layout
-- Search for: navbar, header, footer, sidebar, breadcrumb, layout components
-- Check `components/layout/`, `components/common/`, `app/layout.*`
+## Step 4: Detect Implemented Features
 
-### Core Pages
-- Check for page files: home, about, contact, 404, dashboard, profile, settings
-- Check `pages/`, `app/`, `src/pages/`, `src/app/`
+Based on the detected ecosystem, dynamically build a feature checklist and scan for evidence of each feature. For each feature:
+- Mark `[x]` only if concrete evidence exists (file present, dependency installed, code pattern found)
+- Leave `[ ]` if uncertain
+- Use the appropriate categories for the ecosystem (see Dynamic Category Generation in scaffold-project.prompt.md)
 
-### Data Management
-- Search for: form components, validation (yup, zod, joi), file upload, data table, pagination
-- Check deps: `react-hook-form`, `formik`, `yup`, `zod`, `multer`, `dropzone`
+### For JS/TS Projects — use the standard 17 categories:
+Project Setup, Authentication & Authorization, Navigation & Layout, Core Pages, Data Management, API & Networking, State Management, Styling & Theming, Database, Testing, DevOps & Deployment, Performance, SEO & Analytics, Notifications, Security, Internationalization, Third-Party Integrations.
 
-### API & Networking
-- Search for: API client, axios, fetch wrapper, error handling, interceptors
-- Check `api/`, `services/`, `lib/api`, `utils/api`
-- Check deps: `axios`, `swr`, `react-query`, `@tanstack/react-query`
+### For Python Projects — use Python-specific categories:
+Project Setup, Web Framework, Authentication & Authorization, Database & ORM, API Design, Background Tasks, Testing, Caching, Logging & Monitoring, Security, DevOps & Deployment, Documentation, Third-Party Integrations.
 
-### State Management
-- Check deps: `redux`, `@reduxjs/toolkit`, `zustand`, `recoil`, `mobx`, `jotai`
-- Search for: `createContext`, `useContext`, `Provider`, state store files
+### For .NET Projects — use .NET-specific categories:
+Project Setup, Web Framework, Authentication & Authorization, Database & ORM, API Design, Dependency Injection, Background Services, Testing, Caching, Logging & Monitoring, Security, DevOps & Deployment, SignalR, Third-Party Integrations.
 
-### Styling & Theming
-- Check for: dark mode toggle, theme provider, CSS variables, design tokens
-- Search for: `ThemeProvider`, `dark-mode`, `theme.ts`, `tokens`
+### For Go Projects — use Go-specific categories:
+Project Setup, Web Framework, Authentication & Authorization, Database, API Design, Concurrency, Testing, Logging & Monitoring, Configuration, DevOps & Deployment, Security.
 
-### Database
-- Check for: `prisma/`, schema files, migration folders, seed files
-- Check deps: `prisma`, `mongoose`, `pg`, `mysql2`, `better-sqlite3`
-- Search for: database connection, pool configuration
+### For other languages:
+Dynamically build categories based on the ecosystem's conventions.
 
-### Testing
-- Check for: `__tests__/`, `*.test.*`, `*.spec.*`, test config files
-- Check deps: `jest`, `vitest`, `mocha`, `playwright`, `cypress`, `@testing-library/*`
-- Check for: CI test scripts in `package.json`
+## Step 5: Generate or Update feature-config.md
 
-### DevOps & Deployment
-- Check for: `Dockerfile`, `docker-compose.*`, `.github/workflows/`, `.gitlab-ci.yml`
-- Check for: `.env.example`, `healthpage.*`, `health` endpoint
-- Check `package.json` scripts: `build`, `start`, `deploy`
+1. **Create mode**: Generate a feature-config.md with ecosystem-appropriate categories. Mark detected features as `[x]`, leave undetected as `[ ]`. Fill in the Tech Stack section with detected values.
 
-### Performance
-- Search for: lazy loading (`React.lazy`, dynamic imports), image optimization (`next/image`)
-- Check for: bundle analyzer config, caching headers, service worker
+2. **Merge mode**: Read existing `feature-config.md`. For each feature:
+   - If already `[x]` -> keep as `[x]` (never uncheck)
+   - If `[ ]` and now detected -> change to `[x]`
+   - If `[ ]` and not detected -> keep as `[ ]`
 
-### SEO & Analytics
-- Search for: `<meta`, `og:`, `Head`, `Metadata`, sitemap, robots.txt
-- Check deps: `next-seo`, `react-helmet`, analytics packages (GA, mixpanel, segment)
+3. Add or update a `## Tech Stack (Detected)` section at the top with detected values.
 
-### Notifications
-- Search for: toast, snackbar, notification component, push notification
-- Check deps: `react-toastify`, `sonner`, `notistack`, `firebase-messaging`
+## Step 6: Generate or Update functionality-config.md
 
-### Security
-- Search for: CSRF, helmet, rate-limit, sanitize, CSP, CORS configuration
-- Check deps: `helmet`, `csurf`, `express-rate-limit`, `dompurify`, `xss`
+Check the config for `functionalityConfig`. If `true` (default), also generate a functionality matrix.
 
-### Internationalization (i18n)
-- Check deps: `i18next`, `next-intl`, `react-intl`, `next-i18next`
-- Search for: locale files, translation JSON, `useTranslation`, `t()`
+### What is functionality-config.md?
 
-### Third-Party Integrations
-- Check deps: `stripe`, `@stripe/stripe-js`, `razorpay`
-- Check deps: `@googlemaps/js-api-loader`, `mapbox-gl`, `leaflet`
-- Check for: CMS config (contentful, sanity, strapi)
-- Check deps: `@aws-sdk/client-s3`, `cloudinary`
+While `feature-config.md` tracks **technical features** (how the project is built), `functionality-config.md` tracks **user-facing functionality** (what the project does). This is the difference between "has JWT auth" (technical) and "user can log in, reset password, and manage their profile" (functional).
 
-## Step 4: Generate or Update feature-config.md
+### How to Detect Functionality
 
-1. Look for the feature config template at:
-   - `./templates/feature-config-template.md`
-   - `./.github/templates/feature-config-template.md`
-   - Fall back to the built-in template from the scaffold prompt
+Scan these to identify user-facing capabilities:
 
-2. **Create mode**: Copy template, mark detected features as `[x]`, leave undetected as `[ ]`. Fill in the Tech Stack section with detected values.
+1. **Routes/Pages/Endpoints**: Scan route definitions, page files, controller actions, URL patterns
+   - For Next.js: `app/*/page.*`, `pages/*.tsx`
+   - For Django: `urls.py`, views
+   - For .NET: Controllers, `MapGet`/`MapPost` in Program.cs
+   - For Express/FastAPI: route definitions
+   - For Go: handler registrations
 
-3. **Merge mode**: Read existing `feature-config.md`. For each feature:
-   - If already `[x]` → keep as `[x]` (never uncheck)
-   - If `[ ]` and now detected → change to `[x]`
-   - If `[ ]` and not detected → keep as `[ ]`
+2. **User Flows**: Identify multi-step processes
+   - Registration -> Email verification -> Login
+   - Browse -> Add to cart -> Checkout -> Payment
+   - Create -> Edit -> Publish -> Share
 
-4. Add or update a `## Tech Stack (Detected)` section at the top with:
-   ```
-   ## Tech Stack (Detected)
-   - **Framework**: Next.js 14
-   - **Language**: TypeScript
-   - **Package Manager**: npm
-   - **Styling**: Styled Components
-   - **Database**: Not detected
-   - **ORM**: Not detected
-   - **Testing**: Jest
-   - **State Management**: React Context
-   ```
+3. **CRUD Operations**: Identify resources and their operations
+   - Users (create, read, update, delete)
+   - Products, Posts, Comments, etc.
 
-## Step 5: Output Summary
+4. **Background/Automated Functionality**
+   - Scheduled jobs, cron tasks
+   - Email notifications, webhooks
+   - Data sync, imports/exports
 
-Print a summary table:
+5. **Admin/Management Features**
+   - Admin panels, dashboards
+   - User management, role assignment
+   - Content moderation, analytics viewing
+
+### functionality-config.md Format
+
+```markdown
+# Functionality Configuration
+
+> Auto-generated by Copilot Toolkit. Tracks user-facing functionality and project capabilities.
+> Mark items with `[x]` as they are implemented. Use `/analyze-project` to auto-detect.
+
+## User Flows
+
+### Authentication
+- [ ] User registration / signup
+- [ ] User login (email + password)
+- [ ] Social login (Google, GitHub, etc.)
+- [ ] Password reset via email
+- [ ] Email verification
+- [ ] Two-factor authentication
+- [ ] Session management / logout
+
+### [Other detected flows...]
+- [ ] ...
+
+## Pages / Views
+
+### Public Pages
+- [ ] Home / Landing page
+- [ ] About page
+- [ ] Contact page
+- [ ] ...
+
+### Authenticated Pages
+- [ ] Dashboard
+- [ ] User profile
+- [ ] Settings
+- [ ] ...
+
+## API Endpoints
+
+### [Resource Name] (e.g., Users, Products)
+- [ ] GET /api/[resource] — List all
+- [ ] GET /api/[resource]/:id — Get one
+- [ ] POST /api/[resource] — Create
+- [ ] PUT /api/[resource]/:id — Update
+- [ ] DELETE /api/[resource]/:id — Delete
+
+## Background Services
+- [ ] ...
+
+## Admin Features
+- [ ] ...
+
+## Integrations
+- [ ] ...
+
+---
+
+## Notes
+>
+```
+
+### Create vs Merge Mode
+
+Same rules as feature-config.md:
+- **Create mode**: Generate with detected functionality marked `[x]`
+- **Merge mode**: Preserve existing `[x]`, add newly detected ones, never uncheck
+
+## Step 7: Output Summary
+
+Print a comprehensive summary:
 
 ```
 ## Analysis Summary
+
+### Detected Ecosystem: [Language] / [Framework]
 
 | Category | Detected | Total | Coverage |
 |----------|----------|-------|----------|
@@ -154,18 +246,25 @@ Print a summary table:
 | ... | ... | ... | ... |
 
 ### Detected Tech Stack
-- Framework: Next.js 14.x
-- Language: TypeScript
+- Language: [detected]
+- Framework: [detected]
+- Package Manager: [detected]
 - ...
+
+### Files Generated/Updated
+- feature-config.md: [Created / Updated]
+- functionality-config.md: [Created / Updated / Skipped (disabled in config)]
 
 ### Features Not Detected (may still exist)
 - Some features may be implemented but not detected through code patterns.
-  Review the generated feature-config.md and manually mark any missing ones.
+  Review the generated files and manually mark any missing ones.
 ```
 
 ## Rules
 
-- NEVER modify any existing project code — you are read-only for everything except `feature-config.md`
+- NEVER modify any existing project code — you are read-only for everything except `feature-config.md` and `functionality-config.md`
 - When uncertain whether a feature is implemented, err on the side of NOT marking it (leave `[ ]`)
 - Base detections on concrete evidence (files exist, dependencies installed, code patterns found), not assumptions
 - If the user specified areas to focus on, prioritize those but still scan everything
+- Generate categories appropriate to the detected ecosystem — do NOT force JS/TS categories onto a Python or .NET project
+- The functionality-config.md should describe WHAT the app does from a user perspective, not HOW it is built technically

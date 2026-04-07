@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Copilot Toolkit — User-Level Installer (Mac/Linux)
 # Installs toolkit files to the VS Code user prompts folder so they're available in ALL workspaces.
 # Usage: ./install.sh [--exclude <component>] [--interactive]
@@ -85,13 +85,14 @@ fi
 
 # ─── Interactive Mode ────────────────────────────────────────────────────────
 if [ "$INTERACTIVE" = true ]; then
-    printf "\n${BLUE}╔══════════════════════════════════════════╗${NC}\n"
-    printf "${BLUE}║  Copilot Toolkit — Interactive Install   ║${NC}\n"
-    printf "${BLUE}╚══════════════════════════════════════════╝${NC}\n\n"
+    printf "\n${BLUE}+==========================================+${NC}\n"
+    printf "${BLUE}|  Copilot Toolkit — Interactive Install   |${NC}\n"
+    printf "${BLUE}+==========================================+${NC}\n\n"
     printf "${YELLOW}Select components to install:${NC}\n\n"
 
     declare -A COMP_NAMES=(
-        ["promptLogger"]="Prompt Logger (auto-logs implementation prompts)"
+        ["promptLogger"]="Prompt Logger (auto-logs prompts + routes fixes)"
+        ["autoDocs"]="Auto Documentation (auto-updates README + project-details)"
         ["scaffolder"]="Project Scaffolder (/scaffold-project)"
         ["analyzer"]="Project Analyzer (/analyze-project)"
         ["setup"]="Setup Toolkit (/setup-toolkit)"
@@ -99,7 +100,7 @@ if [ "$INTERACTIVE" = true ]; then
         ["template"]="Feature Config Template"
     )
 
-    for comp in promptLogger scaffolder analyzer setup config template; do
+    for comp in promptLogger autoDocs scaffolder analyzer setup config template; do
         read -rp "  Install ${COMP_NAMES[$comp]}? [Y/n] " response
         if [[ "$response" =~ ^[nN]$ ]]; then
             EXCLUDE+=("$comp")
@@ -111,17 +112,18 @@ fi
 # ─── File Mappings ───────────────────────────────────────────────────────────
 declare -A FILE_MAP=(
     ["promptLogger"]=".github/instructions/prompt-logger.instructions.md|instructions/prompt-logger.instructions.md"
+    ["autoDocs"]=".github/instructions/auto-docs.instructions.md|instructions/auto-docs.instructions.md"
     ["scaffolder"]=".github/prompts/scaffold-project.prompt.md|prompts/scaffold-project.prompt.md"
     ["analyzer"]=".github/prompts/analyze-project.prompt.md|prompts/analyze-project.prompt.md"
     ["setup"]=".github/prompts/setup-toolkit.prompt.md|prompts/setup-toolkit.prompt.md"
-    ["config"]=".github/project-feature-analyser-prompt-saving.ai-config.json|project-feature-analyser-prompt-saving.ai-config.json"
+    ["config"]=".github/copilot-toolkit-config.json|project-feature-analyser-prompt-saving.ai-config.json"
     ["template"]="templates/feature-config-template.md|templates/feature-config-template.md"
 )
 
 # ─── Main ────────────────────────────────────────────────────────────────────
-printf "\n${BLUE}╔══════════════════════════════════════════╗${NC}\n"
-printf "${BLUE}║  Copilot Toolkit — User-Level Installer  ║${NC}\n"
-printf "${BLUE}╚══════════════════════════════════════════╝${NC}\n\n"
+printf "\n${BLUE}+==========================================+${NC}\n"
+printf "${BLUE}|  Copilot Toolkit v2.0 — User Installer   |${NC}\n"
+printf "${BLUE}+==========================================+${NC}\n\n"
 
 info "Target: $PROMPTS_FOLDER"
 echo ""
@@ -129,7 +131,7 @@ echo ""
 INSTALLED=0
 SKIPPED=0
 
-for comp in promptLogger scaffolder analyzer setup config template; do
+for comp in promptLogger autoDocs scaffolder analyzer setup config template; do
     # Check exclusions
     skip=false
     for ex in "${EXCLUDE[@]+"${EXCLUDE[@]}"}"; do
@@ -163,27 +165,30 @@ for comp in promptLogger scaffolder analyzer setup config template; do
 done
 
 # ─── Summary ─────────────────────────────────────────────────────────────────
-printf "\n${GREEN}══════════════════════════════════════════${NC}\n"
+printf "\n${GREEN}==========================================${NC}\n"
 printf "${GREEN}  Installation complete!${NC}\n"
 printf "${GREEN}  Files installed: ${INSTALLED}${NC}\n"
 if [ "$SKIPPED" -gt 0 ]; then
     printf "${YELLOW}  Files skipped: ${SKIPPED}${NC}\n"
 fi
 printf "${GREEN}  Location: ${PROMPTS_FOLDER}${NC}\n"
-printf "${GREEN}══════════════════════════════════════════${NC}\n\n"
+printf "${GREEN}==========================================${NC}\n\n"
 
 cat << EOF
 Available Slash Commands (in any VS Code workspace):
-  /scaffold-project  — Generate or build from feature checklist
-  /analyze-project   — Scan existing project and detect features
-  /setup-toolkit     — Re-run this installer from VS Code
+  /scaffold-project  — Generate or build from feature checklist (any language)
+  /analyze-project   — Scan project, detect features + functionality
+  /setup-toolkit     — Install/configure/upgrade toolkit
 
-To disable prompt logging:
-  Edit: $PROMPTS_FOLDER/project-feature-analyser-prompt-saving.ai-config.json
-  Set:  "promptLogger": false
+Features (v2.0):
+  - Prompt logging       → prompt-log.md (implementation tasks)
+  - Coding fixes log     → coding-fixes-log.md (training-oriented lessons)
+  - Functional fixes log → functional-fixes-log.md (training-oriented lessons)
+  - Auto README/docs     → auto-updates README.md + project-details.md
+  - Feature config       → technical feature matrix (any language)
+  - Functionality config → user-facing functionality matrix
 
-To uninstall:
-  Delete the folder: $PROMPTS_FOLDER
+Config: $PROMPTS_FOLDER/project-feature-analyser-prompt-saving.ai-config.json
 
 Docs: https://github.com/utpanwar/project-feature-analyser-prompt-saving.ai#readme
 EOF

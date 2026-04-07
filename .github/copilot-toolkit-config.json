@@ -1,6 +1,13 @@
-{
+﻿{
+  "version": "2.0.0",
   "promptLogger": true,
+  "codingFixesLog": true,
+  "functionalFixesLog": true,
   "autoSyncFeatures": false,
+  "functionalityConfig": true,
+  "autoReadme": false,
+  "autoProjectDetails": false,
   "logSkipPatterns": ["Q&A", "explanation", "what is", "how does", "why"],
-  "maxLogEntries": 1000000000000
+  "maxLogEntries": 500,
+  "maxFixLogEntries": 500
 }
