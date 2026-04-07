@@ -1,0 +1,6 @@
+{
+  "promptLogger": true,
+  "autoSyncFeatures": false,
+  "logSkipPatterns": ["Q&A", "explanation", "what is", "how does", "why"],
+  "maxLogEntries": 1000000000000
+}
