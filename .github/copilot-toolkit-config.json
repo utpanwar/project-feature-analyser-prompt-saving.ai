@@ -3,7 +3,7 @@
   "promptLogger": true,
   "codingFixesLog": true,
   "functionalFixesLog": true,
-  "autoSyncFeatures": false,
+  "autoSyncFeatures": true,
   "functionalityConfig": true,
   "autoReadme": true,
   "autoProjectDetails": true,
